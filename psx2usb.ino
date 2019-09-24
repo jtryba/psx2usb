@@ -1,13 +1,14 @@
 // Simple application to use a psx controller on a pc over usb.
 //
 // v0.1 - initial relase, only suppors 1 psx controller
+// v0.2 - updated relase, supports 2 psx controllers
 //
 // NOTE: This sketch file is for use with Arduino Leonardo and
 //       Arduino Micro only.
 //
 // by John Tryba
-// 9/19/2019
-// v0.1
+// 9/23/2019
+// v0.2
 //--------------------------------------------------------------------
 
 #define PSX_LEFT      0
@@ -38,10 +39,16 @@
 #define clockPin0 5
 #define ackPinP0 6
 
+#define dataPin1 7
+#define cmndPin1 8
+#define attPin1 9
+#define clockPin1 10
+#define ackPinP1 A0
+
 #define debugPin A1
 
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_GAMEPAD,
-                   14, 0,                  // Button Count, Hat Switch Count
+                   28, 0,                  // Button Count, Hat Switch Count
                    false, false, false,    // No X, Y, and Z Axis
                    false, false, false,    // No Rx, Ry, or Rz
                    false, false,           // No rudder or throttle
@@ -50,10 +57,12 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_GAMEPAD,
 
 
 Psx Psx0;                                                  // Initializes the library for player 1
+Psx Psx1;                                                  // Initializes the library for player 2
 
 byte button[14] = {0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-unsigned int data0 = 0;                                   // data stores the controller response
+unsigned int data0 = 0;                                    // data stores the controller response for player 1
+unsigned int data1 = 0;                                    // data stores the controller response for player 2
 byte debug = 0x00;                                        // data stores the debug value
 
 void setup() {
@@ -63,11 +72,27 @@ void setup() {
   // measured in microseconds.
   // too small delay may not work (under 5)
 
+  Psx1.setupPins(dataPin1, cmndPin1, attPin1, clockPin1, psxDelay); // Defines what each pin is used
+  // (Data Pin #, Cmnd Pin #, Att Pin #, Clk Pin #, Delay)
+  // Delay measures how long the clock remains at each state,
+  // measured in microseconds.
+  // too small delay may not work (under 5)
+
   data0 = Psx0.read();                                      // Psx.read() initiates the PSX controller and returns
+  // the button data
+
+  data1 = Psx1.read();                                      // Psx.read() initiates the PSX controller and returns
   // the button data
 
 
   pinMode(ackPinP0, INPUT_PULLUP);                          // ACK Acknowledge signal from Controller to PSX.
+  // This signal should go low for at least one clock period
+  // after each 8 bits are sent and ATT is still held low.
+  // If the ACK signal does not go low within about 60 us
+  // the PSX will then start interogating other devices.
+
+
+  pinMode(ackPinP1, INPUT_PULLUP);                          // ACK Acknowledge signal from Controller to PSX.
   // This signal should go low for at least one clock period
   // after each 8 bits are sent and ATT is still held low.
   // If the ACK signal does not go low within about 60 us
@@ -85,17 +110,19 @@ void setup() {
 
 }
 
-byte lastButtonState[14] = {
+byte lastButtonState[28] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 void loop() {
 
   data0 = Psx0.read();
+  data1 = Psx1.read();
 
   if (debug == 0xFF) {
-    char buf[32];
-    sprintf(buf, "0x%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
+    char buf[64];
+    sprintf(buf, "0x%d%d%d%d%d%d%d%d%d%d%d%d%d%d 0x%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
             bitRead(data0, button[PSX_LEFT]),
             bitRead(data0, button[PSX_DOWN]),
             bitRead(data0, button[PSX_RIGHT]),
@@ -109,15 +136,29 @@ void loop() {
             bitRead(data0, button[PSX_R1]),
             bitRead(data0, button[PSX_L1]),
             bitRead(data0, button[PSX_R2]),
-            bitRead(data0, button[PSX_L2])
+            bitRead(data0, button[PSX_L2]),
+            bitRead(data1, button[PSX_LEFT]),
+            bitRead(data1, button[PSX_DOWN]),
+            bitRead(data1, button[PSX_RIGHT]),
+            bitRead(data1, button[PSX_UP]),
+            bitRead(data1, button[PSX_START]),
+            bitRead(data1, button[PSX_SELECT]),
+            bitRead(data1, button[PSX_SQUARE]),
+            bitRead(data1, button[PSX_X]),
+            bitRead(data1, button[PSX_O]),
+            bitRead(data1, button[PSX_TRIANGE]),
+            bitRead(data1, button[PSX_R1]),
+            bitRead(data1, button[PSX_L1]),
+            bitRead(data1, button[PSX_R2]),
+            bitRead(data1, button[PSX_L2])
            );
     Serial.println(buf);                                   // Display the returned value
   }
 
   // Read psx btn values
-  for (int index = 0; index < 14; index++)
+  for (int index = 0; index < 28; index++)
   {
-    byte currentButtonState = bitRead(data0, button[index]);
+    byte currentButtonState = bitRead(index < 14 ? data0 : data1, button[index < 14 ? index : index - 14]);
     if (currentButtonState != lastButtonState[index])
     {
       Joystick.setButton(index, currentButtonState);
