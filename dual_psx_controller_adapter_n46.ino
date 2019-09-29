@@ -5,13 +5,14 @@
 // v0.3   - updated relase, supports 2 psx controllers, using 2 joystick implimentations
 // v0.4   - updated relase, supports 2 psx controllers, and 1 n64 controller, using 3 joystick implimentations
 // v0.4.1 - fixed n64 button layout
+// v0.4.2 - fixed pin definition for n64 controller
 //
 // NOTE: This sketch file is for use with Arduino Leonardo and
 //       Arduino Micro only.
 //
 // by John Tryba
 // 9/29/2019
-// v0.4.1
+// v0.4.2
 //--------------------------------------------------------------------
 
 #define PSX_LEFT      0
@@ -34,7 +35,7 @@
 
 #include <Joystick.h>                                     // Includes the Joystick Library
 
-#include <N64Controller.h>                                // Includes the N64Controller Library 
+#include <N64Controller.h>                                // Includes the N64Controller Library
 
 #include <Psx.h>                                          // Includes the Psx Library 
 // Any pins can be used since it is done in software
@@ -57,7 +58,7 @@
 
 #define debugPin A1
 
-#define n64Pin 2
+#define n64Pin A2
 
 //---PIN-DEFINITIONS---
 
@@ -85,9 +86,9 @@ Joystick_ Joystick[JOYSTICK_COUNT] = {
                    false, false, false)    // No accelerator, brake, or steering
 };
 
-Psx Psx0;                                                  // Initializes the library for player 1
-Psx Psx1;                                                  // Initializes the library for player 2
-N64Controller n64con(n64Pin);                              // Initializes the library for player 3
+Psx Psx0;                                                  // Initializes the psx library for player 1
+Psx Psx1;                                                  // Initializes the psx library for player 2
+N64Controller n64con(n64Pin);                              // Initializes the n64 library for player 3
 
 byte button[14] = {0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -169,6 +170,7 @@ unsigned int ReadN64() {
     n64con.C_left(),
     n64con.C_right()
   );
+  
   ret = atoi(n54data);
 
   return ret;
@@ -233,7 +235,7 @@ void loop() {
     Serial.println(buf);                                   // Display the returned value
   }
 
-  // Read psx btn values
+  // Read btn values to joystick implimentations
   for (int joyIndex = 0; joyIndex < JOYSTICK_COUNT; joyIndex++) {
     if (joyIndex == 2) {
         Joystick[joyIndex].setXAxis(n64xAxis);
