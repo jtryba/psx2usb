@@ -1,16 +1,17 @@
 // Simple application to use a psx controller on a pc over usb.
 //
-// v0.1 - initial relase, only suppors 1 psx controller
-// v0.2 - updated relase, supports 2 psx controllers
-// v0.3 - updated relase, supports 2 psx controllers, using 2 joystick implimentations
-// v0.4 - updated relase, supports 2 psx controllers, and 1 n64 controller, using 3 joystick implimentations
+// v0.1   - initial relase, only suppors 1 psx controller
+// v0.2   - updated relase, supports 2 psx controllers
+// v0.3   - updated relase, supports 2 psx controllers, using 2 joystick implimentations
+// v0.4   - updated relase, supports 2 psx controllers, and 1 n64 controller, using 3 joystick implimentations
+// v0.4.1 - fixed n64 button layout
 //
 // NOTE: This sketch file is for use with Arduino Leonardo and
 //       Arduino Micro only.
 //
 // by John Tryba
 // 9/29/2019
-// v0.4
+// v0.4.1
 //--------------------------------------------------------------------
 
 #define PSX_LEFT      0
@@ -196,6 +197,7 @@ void loop() {
             bitRead(data[0], button[PSX_L1]),
             bitRead(data[0], button[PSX_R2]),
             bitRead(data[0], button[PSX_L2]),
+            
             bitRead(data[1], button[PSX_LEFT]),
             bitRead(data[1], button[PSX_DOWN]),
             bitRead(data[1], button[PSX_RIGHT]),
@@ -238,7 +240,7 @@ void loop() {
         Joystick[joyIndex].setYAxis(n64yAxis);
     }
     for (int buttonIndex = 0; buttonIndex < BUTTON_COUNT; buttonIndex++) {
-      byte currentButtonState = bitRead(data[joyIndex], button[buttonIndex]);
+      byte currentButtonState = bitRead(data[joyIndex], joyIndex != 2 ? button[buttonIndex] : buttonIndex);
       if (currentButtonState != lastButtonState[joyIndex][buttonIndex]) {
         Joystick[joyIndex].setButton(buttonIndex, currentButtonState);
         lastButtonState[joyIndex][buttonIndex] = currentButtonState;
